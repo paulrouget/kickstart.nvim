@@ -41,8 +41,9 @@ P.S. You can delete this when you're done too. It's your config now :)
 -- Set <space> as the leader key
 -- See `:help mapleader`
 --  NOTE: Must happen before plugins are required (otherwise wrong leader will be used)
-vim.g.mapleader = ' '
-vim.g.maplocalleader = ' '
+local bs = vim.api.nvim_replace_termcodes('<BS>', false, false, true)
+vim.g.mapleader = bs
+vim.g.maplocalleader = bs
 
 -- [[ Install `lazy.nvim` plugin manager ]]
 --    https://github.com/folke/lazy.nvim
@@ -153,11 +154,10 @@ require('lazy').setup({
   },
 
   {
-    -- Theme inspired by Atom
-    'navarasu/onedark.nvim',
+    'sainnhe/gruvbox-material',
     priority = 1000,
     config = function()
-      vim.cmd.colorscheme 'onedark'
+      vim.cmd.colorscheme 'gruvbox-material'
     end,
   },
 
@@ -168,21 +168,37 @@ require('lazy').setup({
     opts = {
       options = {
         icons_enabled = false,
-        theme = 'onedark',
+        -- theme = 'onedark',
         component_separators = '|',
         section_separators = '',
+      },
+      sections = {
+        lualine_a = {},
+        lualine_b = {},
+        lualine_c = {{ 'filename', path = 1, shorting_target = 0}, 'diagnostics', },
+        lualine_x = {'location', 'progress' },
+        lualine_y = {},
+        lualine_z = {}
+      },
+      inactive_sections = {
+        lualine_a = {{ 'filename', path = 1, shorting_target = 0 }, { 'diagnostics' } },
+        lualine_b = {},
+        lualine_c = {},
+        lualine_x = {},
+        lualine_y = {},
+        lualine_z = {}
       },
     },
   },
 
-  {
-    -- Add indentation guides even on blank lines
-    'lukas-reineke/indent-blankline.nvim',
-    -- Enable `lukas-reineke/indent-blankline.nvim`
-    -- See `:help ibl`
-    main = 'ibl',
-    opts = {},
-  },
+  -- {
+  --   -- Add indentation guides even on blank lines
+  --   'lukas-reineke/indent-blankline.nvim',
+  --   -- Enable `lukas-reineke/indent-blankline.nvim`
+  --   -- See `:help ibl`
+  --   main = 'ibl',
+  --   opts = {},
+  -- },
 
   -- "gc" to comment visual regions/lines
   { 'numToStr/Comment.nvim', opts = {} },
@@ -229,7 +245,7 @@ require('lazy').setup({
   --    Uncomment the following line and add your plugins to `lua/custom/plugins/*.lua` to get going.
   --
   --    For additional information see: https://github.com/folke/lazy.nvim#-structuring-your-plugins
-  -- { import = 'custom.plugins' },
+  { import = 'custom.plugins' },
 }, {})
 
 -- [[ Setting options ]]
@@ -237,18 +253,18 @@ require('lazy').setup({
 -- NOTE: You can change these options as you wish!
 
 -- Set highlight on search
-vim.o.hlsearch = false
+vim.o.hlsearch = true
 
 -- Make line numbers default
 vim.wo.number = true
 
--- Enable mouse mode
-vim.o.mouse = 'a'
+-- Disable mouse mode
+vim.o.mouse = ''
 
 -- Sync clipboard between OS and Neovim.
 --  Remove this option if you want your OS clipboard to remain independent.
 --  See `:help 'clipboard'`
-vim.o.clipboard = 'unnamedplus'
+-- vim.o.clipboard = 'unnamedplus'
 
 -- Enable break indent
 vim.o.breakindent = true
@@ -316,61 +332,20 @@ require('telescope').setup {
 -- Enable telescope fzf native, if installed
 pcall(require('telescope').load_extension, 'fzf')
 
--- Telescope live_grep in git root
--- Function to find the git root directory based on the current buffer's path
-local function find_git_root()
-  -- Use the current buffer's path as the starting point for the git search
-  local current_file = vim.api.nvim_buf_get_name(0)
-  local current_dir
-  local cwd = vim.fn.getcwd()
-  -- If the buffer is not associated with a file, return nil
-  if current_file == "" then
-    current_dir = cwd
-  else
-    -- Extract the directory from the current file's path
-    current_dir = vim.fn.fnamemodify(current_file, ":h")
-  end
-
-  -- Find the Git root directory from the current file's path
-  local git_root = vim.fn.systemlist("git -C " .. vim.fn.escape(current_dir, " ") .. " rev-parse --show-toplevel")[1]
-  if vim.v.shell_error ~= 0 then
-    print("Not a git repository. Searching on current working directory")
-    return cwd
-  end
-  return git_root
-end
-
--- Custom live_grep function to search in git root
-local function live_grep_git_root()
-  local git_root = find_git_root()
-  if git_root then
-    require('telescope.builtin').live_grep({
-      search_dirs = {git_root},
-    })
-  end
-end
-
-vim.api.nvim_create_user_command('LiveGrepGitRoot', live_grep_git_root, {})
-
 -- See `:help telescope.builtin`
-vim.keymap.set('n', '<leader>?', require('telescope.builtin').oldfiles, { desc = '[?] Find recently opened files' })
-vim.keymap.set('n', '<leader><space>', require('telescope.builtin').buffers, { desc = '[ ] Find existing buffers' })
-vim.keymap.set('n', '<leader>/', function()
-  -- You can pass additional configuration to telescope to change theme, layout, etc.
-  require('telescope.builtin').current_buffer_fuzzy_find(require('telescope.themes').get_dropdown {
-    winblend = 10,
-    previewer = false,
-  })
-end, { desc = '[/] Fuzzily search in current buffer' })
-
-vim.keymap.set('n', '<leader>gf', require('telescope.builtin').git_files, { desc = 'Search [G]it [F]iles' })
-vim.keymap.set('n', '<leader>sf', require('telescope.builtin').find_files, { desc = '[S]earch [F]iles' })
-vim.keymap.set('n', '<leader>sh', require('telescope.builtin').help_tags, { desc = '[S]earch [H]elp' })
-vim.keymap.set('n', '<leader>sw', require('telescope.builtin').grep_string, { desc = '[S]earch current [W]ord' })
-vim.keymap.set('n', '<leader>sg', require('telescope.builtin').live_grep, { desc = '[S]earch by [G]rep' })
-vim.keymap.set('n', '<leader>sG', ':LiveGrepGitRoot<cr>', { desc = '[S]earch by [G]rep on Git Root' })
-vim.keymap.set('n', '<leader>sd', require('telescope.builtin').diagnostics, { desc = '[S]earch [D]iagnostics' })
-vim.keymap.set('n', '<leader>sr', require('telescope.builtin').resume, { desc = '[S]earch [R]esume' })
+local ivys = require('telescope.themes').get_ivy({previewer = false})
+local ivyf = require('telescope.themes').get_ivy({previewer = true})
+vim.keymap.set('n', '<leader>?', function() require('telescope.builtin').oldfiles(ivys) end, { desc = '[?] Find recently opened files' })
+vim.keymap.set('n', '<leader><BS>', function() require('telescope.builtin').buffers(ivys) end, { desc = '[ ] Find existing buffers' })
+vim.keymap.set('n', '<leader>/', function() require('telescope.builtin').current_buffer_fuzzy_find(ivyf) end, { desc = '[/] Fuzzily search in current buffer' })
+vim.keymap.set('n', '<leader>*', function() require('telescope.builtin').grep_string(ivys) end, { desc = '[S]earch current [W]ord' })
+vim.keymap.set('n', '<leader>gf', function() require('telescope.builtin').git_files(ivyf) end, { desc = 'Search [G]it [F]iles' })
+vim.keymap.set('n', '<leader>gc', function() require('telescope.builtin').git_status(ivyf) end, { desc = 'Search [G]it [C]hanged Files' })
+vim.keymap.set('n', '<leader>sf', function() require('telescope.builtin').find_files(ivyf) end, { desc = '[S]earch [F]iles' })
+vim.keymap.set('n', '<leader>sh', function() require('telescope.builtin').help_tags(ivyf) end, { desc = '[S]earch [H]elp' })
+vim.keymap.set('n', '<leader>sg', function() require('telescope.builtin').live_grep(ivyf) end, { desc = '[S]earch by [G]rep' })
+vim.keymap.set('n', '<leader>sd', function() require('telescope.builtin').diagnostics(ivyf) end, { desc = '[S]earch [D]iagnostics' })
+vim.keymap.set('n', '<leader>sr', function() require('telescope.builtin').resume(ivyf) end, { desc = '[S]earch [R]esume' })
 
 -- [[ Configure Treesitter ]]
 -- See `:help nvim-treesitter`
@@ -515,7 +490,7 @@ local servers = {
   -- gopls = {},
   -- pyright = {},
   -- rust_analyzer = {},
-  -- tsserver = {},
+  tsserver = {},
   -- html = { filetypes = { 'html', 'twig', 'hbs'} },
 
   lua_ls = {
@@ -601,6 +576,21 @@ cmp.setup {
     { name = 'luasnip' },
   },
 }
+
+-- Big fingers
+vim.api.nvim_create_user_command('WQ', 'wq', {})
+vim.api.nvim_create_user_command('Wq', 'wq', {})
+vim.api.nvim_create_user_command('W', 'w', {})
+vim.api.nvim_create_user_command('Qa', 'qa', {})
+vim.api.nvim_create_user_command('Q', 'q', {})
+
+vim.cmd(":nnoremap <expr> <CR> &buftype ==# 'quickfix' ? \"\\<CR>\" : ':'")
+vim.keymap.set('n', '<C-e>', "j<C-e>", { noremap = true, desc = 'Scroll and move cursor down' })
+vim.keymap.set('n', '<C-y>', "k<C-y>", { noremap = true, desc = 'Scroll and move cursor up' })
+vim.keymap.set('n', '-', "<C-w><<C-w><", { desc = 'Shring window' })
+vim.keymap.set('n', '+', "<C-w>><C-w>>", { desc = 'Grow window' })
+
+vim.o.wrap = false
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
